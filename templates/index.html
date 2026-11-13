@@ -39,7 +39,7 @@
       }
       li {
         display: grid;
-        grid-template-columns: 56px 1fr auto;
+        grid-template-columns: 56px minmax(0, 1fr) auto;
         gap: 12px;
         padding: 12px 0;
         border-bottom: 1px solid rgba(127, 127, 127, 0.2);
@@ -64,12 +64,15 @@
       .score {
         font-weight: 600;
       }
+      .content {
+        overflow-wrap: anywhere;
+      }
       .title {
         font-size: 16px;
         margin: 0 0 6px;
       }
       .url {
-        color: gray;
+        color: #666;
         font-size: 12px;
         text-decoration: none;
       }
@@ -147,7 +150,13 @@
       .hidden-section h2 {
         font-size: 18px;
         margin: 0 0 16px;
-        color: rgba(127, 127, 127, 0.7);
+        color: #666;
+      }
+      @media (prefers-color-scheme: dark) {
+        .url,
+        .hidden-section h2 {
+          color: #aaa;
+        }
       }
     </style>
   </head>
@@ -160,8 +169,6 @@
     </header>
 
     <main class="container">
-      <!-- Feature B: Flash messages for validation errors -->
-      <!-- Displays error messages when post submission fails validation -->
       {% with messages = get_flashed_messages() %} {% if messages %}
       <div class="flash-messages">
         {% for message in messages %}
@@ -170,11 +177,6 @@
       </div>
       {% endif %} {% endwith %}
 
-      <!-- ================================================================ -->
-      <!-- Feature B: Submit New Post Form -->
-      <!-- ================================================================ -->
-      <!-- Users can add new posts with a title and URL -->
-      <!-- Form submits to /submit route which validates and adds the post -->
       <div class="submit-form">
         <h2>Submit a New Post</h2>
         <form method="post" action="/submit">
@@ -191,7 +193,7 @@
           <div class="form-group">
             <label for="url">URL</label>
             <input
-              type="text"
+              type="url"
               id="url"
               name="url"
               placeholder="https://example.com"
@@ -202,34 +204,23 @@
         </form>
       </div>
 
-      <!-- ================================================================ -->
-      <!-- Main Feed: Visible Posts (sorted by score, highest first) -->
-      <!-- ================================================================ -->
-      <!-- Feature A: Posts are sorted by score descending -->
-      <!-- Feature C: Only shows posts where hidden=False -->
       <ul>
         {% for link in links %}
         <li>
-          <!-- Feature A: Upvote/Downvote Controls -->
-          <!-- Each form submits the post's URL to identify which post to update -->
           <div class="votes">
-            <!-- Upvote: Increment score by 1 -->
             <form method="post" action="/upvote">
-              <input type="hidden" name="url" value="{{ link.url }}" />
-              <button class="up" type="submit">▲</button>
+              <input type="hidden" name="post_id" value="{{ link.id }}" />
+              <button class="up" type="submit" aria-label="Upvote {{ link.title }}">▲</button>
             </form>
 
-            <!-- Display current score -->
             <div class="score" data-score>{{ link.score }}</div>
 
-            <!-- Downvote: Decrement score by 1 -->
             <form method="post" action="/downvote">
-              <input type="hidden" name="url" value="{{ link.url }}" />
-              <button class="down" type="submit">▼</button>
+              <input type="hidden" name="post_id" value="{{ link.id }}" />
+              <button class="down" type="submit" aria-label="Downvote {{ link.title }}">▼</button>
             </form>
           </div>
 
-          <!-- Post Content -->
           <div class="content">
             <p class="title">
               <a href="{{ link.url }}" target="_blank" rel="noopener noreferrer"
@@ -245,46 +236,34 @@
             >
           </div>
 
-          <!-- Feature C: Hide Button -->
-          <!-- Clicking this sets hidden=True and moves post to "Hidden posts" section -->
           <form method="post" action="/toggle-hide">
-            <input type="hidden" name="url" value="{{ link.url }}" />
+            <input type="hidden" name="post_id" value="{{ link.id }}" />
             <button type="submit" class="hide-button">Hide</button>
           </form>
         </li>
         {% endfor %}
       </ul>
 
-      <!-- ================================================================ -->
-      <!-- Feature C: Hidden Posts Section -->
-      <!-- ================================================================ -->
-      <!-- Only displayed if there are posts with hidden=True -->
-      <!-- Posts here are also sorted by score descending for consistency -->
       {% if hidden_links %}
       <div class="hidden-section">
         <h2>Hidden posts</h2>
         <ul>
           {% for link in hidden_links %}
           <li>
-            <!-- Feature A: Upvote/Downvote still work on hidden posts -->
             <div class="votes">
-              <!-- Upvote: Increment score by 1 -->
               <form method="post" action="/upvote">
-                <input type="hidden" name="url" value="{{ link.url }}" />
-                <button class="up" type="submit">▲</button>
+                <input type="hidden" name="post_id" value="{{ link.id }}" />
+                <button class="up" type="submit" aria-label="Upvote {{ link.title }}">▲</button>
               </form>
 
-              <!-- Display current score -->
               <div class="score" data-score>{{ link.score }}</div>
 
-              <!-- Downvote: Decrement score by 1 -->
               <form method="post" action="/downvote">
-                <input type="hidden" name="url" value="{{ link.url }}" />
-                <button class="down" type="submit">▼</button>
+                <input type="hidden" name="post_id" value="{{ link.id }}" />
+                <button class="down" type="submit" aria-label="Downvote {{ link.title }}">▼</button>
               </form>
             </div>
 
-            <!-- Post Content -->
             <div class="content">
               <p class="title">
                 <a
@@ -303,10 +282,8 @@
               >
             </div>
 
-            <!-- Feature C: Unhide Button -->
-            <!-- Clicking this sets hidden=False and moves post back to main feed -->
             <form method="post" action="/toggle-hide">
-              <input type="hidden" name="url" value="{{ link.url }}" />
+              <input type="hidden" name="post_id" value="{{ link.id }}" />
               <button type="submit" class="hide-button">Unhide</button>
             </form>
           </li>
